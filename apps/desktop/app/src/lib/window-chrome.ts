@@ -11,7 +11,7 @@ function overlay(): Overlay | undefined {
 }
 
 /** Geometry belongs to the local window, not to the computer whose Project it displays. */
-export function readWindowChrome(): ChromeLayout {
+function readWindowChrome(): ChromeLayout {
   const mode = window.milagreWindowChrome?.controls ?? "external";
   let sidebarLeft = mode === "leading" ? 88 : 12;
   let rightInset = mode === "overlay" ? 150 : 0;

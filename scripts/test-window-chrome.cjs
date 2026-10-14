@@ -11,9 +11,8 @@ import { createRoot } from "react-dom/client";
 import SidebarNav from "/src/components/SidebarNav";
 import { DiffBar, ChangesToggle, AttentionButton } from "/src/components/changes/ChangesChrome";
 import { PanelToggles, useSidePanel } from "/src/components/agents/PanelToggles";
-import { readWindowChrome } from "/src/lib/window-chrome";
+import { useWindowChrome } from "/src/lib/window-chrome";
 import "/src/styles.css";
-window.readChrome = readWindowChrome;
 window.milagre = {
   listRecentProjects: async () => [], listProjects: async () => [], listNamedLinks: async () => [],
   getProjectImage: async () => null, listEditors: async () => [],
@@ -29,6 +28,8 @@ window.simulateGeometry = (controls, x, width, visible = true) => {
   window.dispatchEvent(new Event("resize"));
 };
 function Fixture() {
+  const chrome = useWindowChrome();
+  window.readChrome = () => chrome;
   const [changes, setChanges] = useState(false);
   const [diff, setDiff] = useState(false);
   const [terminal, setTerminal] = useState(false);

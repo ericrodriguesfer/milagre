@@ -141,7 +141,7 @@ export function SettingsNav({
   const imageOf = useProjectImages(rows.map((row) => row.path));
   return (
     <aside aria-label="Settings navigation" className="flex h-full w-[224px] shrink-0 flex-col overflow-hidden rounded-window bg-surface shadow-card">
-      <div aria-hidden className="h-8 shrink-0" />
+      <div aria-hidden className="h-[calc(var(--window-chrome-height)-12px)] shrink-0" />
       <GlideGroup>
         <RailButton icon={<Icon icon={ArrowLeft02Icon} />} label="Back" onClick={onBack} />
       </GlideGroup>

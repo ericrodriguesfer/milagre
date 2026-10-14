@@ -1252,24 +1252,25 @@ export default memo(function SidebarNav({
   const chrome = useWindowChrome();
   return (
     <div className={`relative flex min-h-0 shrink-0 flex-col ${fill ? "h-full" : "h-[600px]"} ${className}`}>
-      {createPortal(
-        <div data-sidebar-toggle className="fixed top-[var(--window-chrome-top)] z-[60]" style={{ left: chrome.sidebarLeft }}>
-          <Tooltip label={collapsed ? "Expand sidebar" : "Collapse sidebar"} shortcut="⌘B" side="bottom">
-            <button
-              type="button"
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-expanded={!collapsed}
-              onClick={toggle}
-              className="flex size-8 items-center justify-center rounded-[8px] text-ink-3 transition-colors hover:bg-hover-2 hover:text-ink [-webkit-app-region:no-drag]"
-            >
-              <span className="pointer-events-none flex items-center justify-center">
-                <HugeIcon icon={collapsed ? SidebarRight01Icon : SidebarLeft01Icon} size={18} />
-              </span>
-            </button>
-          </Tooltip>
-        </div>,
-        document.body,
-      )}
+      <div
+        data-sidebar-toggle
+        className="absolute top-[calc(var(--window-chrome-top)-var(--window-chrome-height))] z-[60]"
+        style={{ left: chrome.sidebarLeft - 12 }}
+      >
+        <Tooltip label={collapsed ? "Expand sidebar" : "Collapse sidebar"} shortcut="⌘B" side="bottom">
+          <button
+            type="button"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!collapsed}
+            onClick={toggle}
+            className="flex size-8 items-center justify-center rounded-[8px] text-ink-3 transition-colors hover:bg-hover-2 hover:text-ink [-webkit-app-region:no-drag]"
+          >
+            <span className="pointer-events-none flex items-center justify-center">
+              <HugeIcon icon={collapsed ? SidebarRight01Icon : SidebarLeft01Icon} size={18} />
+            </span>
+          </button>
+        </Tooltip>
+      </div>
       <aside
         data-sidebar-collapsed={collapsed}
         aria-label="Workspace navigation"

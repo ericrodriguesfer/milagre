@@ -9,13 +9,21 @@ const fixture = `
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import SidebarNav from "/src/components/SidebarNav";
+import { SettingsNav } from "/src/components/Settings";
+import { DotBackground } from "/src/components/DotBackground";
+import { DesignPageEditor } from "/src/components/agents/DesignPageEditor";
+import { createExampleDesign, designHtml } from "@milagre/shared/design";
 import { DiffBar, ChangesToggle, AttentionButton } from "/src/components/changes/ChangesChrome";
 import { PanelToggles, useSidePanel } from "/src/components/agents/PanelToggles";
 import { useWindowChrome } from "/src/lib/window-chrome";
 import "/src/styles.css";
+const designDocument = createExampleDesign();
+const artifact = { id: "chrome", title: "Window controls", format: "design", version: 1, latest: 1, versions: 1, width: designDocument.width, height: designDocument.height, document: designDocument, html: designHtml(designDocument) };
 window.milagre = {
   listRecentProjects: async () => [], listProjects: async () => [], listNamedLinks: async () => [],
   getProjectImage: async () => null, listEditors: async () => [],
+  readDesignsEnabled: async () => ({ enabled: true }), onDesignsEnabledChanged: () => () => {}, onAgentEvent: () => () => {},
+  artifacts: { list: async () => [artifact], get: async () => artifact, sharingStatus: async () => ({ available: false }) },
 };
 window.milagreWindowChrome = { controls: new URLSearchParams(location.search).get("controls") };
 // Only geometry edge cases are simulated. The default/overlay cases use Electron's actual native API.
@@ -33,23 +41,34 @@ function Fixture() {
   const [changes, setChanges] = useState(false);
   const [diff, setDiff] = useState(false);
   const [terminal, setTerminal] = useState(false);
+  const [settings, setSettings] = useState(false);
+  const [editor, setEditor] = useState(false);
+  window.showSettings = setSettings;
+  window.showEditor = setEditor;
   window.showDiff = setDiff;
   useSidePanel("terminal", { open: terminal, toggle: () => setTerminal(v => !v) });
-  return <div style={{ height: "100vh", background: "#141820", color: "#ddd" }}>
+  return <><DotBackground><div style={{ width: "100%", height: "100vh", background: "#141820", color: "#ddd" }}>
     <div aria-hidden className="title-drag fixed inset-x-0 top-0 z-50 h-[var(--window-chrome-height)]" />
-    {!diff && <><ChangesToggle open={changes} onToggle={() => setChanges(v => !v)} />
+    {!diff && !settings && <><ChangesToggle open={changes} onToggle={() => setChanges(v => !v)} />
     <PanelToggles right={52} />
     <AttentionButton label="Review ready" items={[{ key: "1", project: "Layout", asking: false }]} offset={2} onOpen={() => window.attentionOpened = true} /></>}
-    <div style={{ display: "flex", height: "100%", padding: "var(--window-chrome-height) 12px 12px", gap: 12 }}>
-      <SidebarNav fill workspaceName="Layout" recents={[{ id: "1", label: "Check window controls" }]} activeId="1" />
-      <main style={{ flex: 1, minWidth: 0, background: "#20242c", borderRadius: 12, padding: 20 }}>
+    <div style={{ display: "flex", height: "100%", gap: 12 }}>
+      <div data-sidebar-host className={"min-h-0 shrink-0 pt-[var(--window-chrome-height)] pb-3 pl-3 " + (settings ? "hidden" : "flex")}>
+        <SidebarNav fill workspaceName="Layout" recents={[{ id: "1", label: "Check window controls" }]} activeId="1" />
+      </div>
+      {settings && <div className="flex shrink-0 py-3 pl-3">
+        <SettingsNav section="appearance" onSelect={() => {}} onSelectProject={() => {}} showProjectSettings={false} onBack={() => window.settingsBackCalls = (window.settingsBackCalls ?? 0) + 1} />
+      </div>}
+      <main style={{ flex: 1, minWidth: 0, background: "#20242c", borderRadius: 12, padding: 20, margin: "var(--window-chrome-height) 12px 12px 0" }}>
         <p>Window layout check</p><p>Sidebar, changes and panels remain clickable.</p>
       </main>
     </div>
     {diff && <div data-diff-host style={{ position: "absolute", top: 0, left: 68, right: 0, height: 60 }}>
       <DiffBar open onBack={() => setDiff(false)} trailing={<button data-diff-action onClick={() => window.diffAction = true} className="h-8 px-3 bg-surface rounded-control [-webkit-app-region:no-drag]">Diff action</button>} />
     </div>}
-  </div>;
+  </div></DotBackground>
+    {editor && <DesignPageEditor chatId="/chrome#1" artifact={artifact} onClose={() => setEditor(false)} />}
+  </>;
 }
 document.documentElement.classList.add("dark");
 createRoot(document.getElementById("root")).render(<Fixture />);
@@ -83,13 +102,20 @@ async function browserChecks() {
         bridgeWindow.destroy();
       }
       const win = new BrowserWindow({ width: 1100, height: 650, ...chrome.options, show: true, webPreferences: { backgroundThrottling: false } });
-      const evaluate = (source) => win.webContents.executeJavaScript(source);
+      const evaluate = (source) =>
+        win.webContents.executeJavaScript(source).catch((cause) => {
+          throw new Error(`Could not evaluate: ${source}`, { cause });
+        });
       const waitFor = async (source) => {
         for (let i = 0; i < 200; i++) {
           if (await evaluate(source)) return;
           await delay(25);
         }
         throw new Error(`Timed out: ${source}`);
+      };
+      const clickAt = (x, y) => {
+        win.webContents.sendInputEvent({ type: "mouseDown", button: "left", clickCount: 1, x: Math.round(x), y: Math.round(y) });
+        win.webContents.sendInputEvent({ type: "mouseUp", button: "left", clickCount: 1, x: Math.round(x), y: Math.round(y) });
       };
       const click = async (selector) => {
         const point = await evaluate(
@@ -142,6 +168,48 @@ async function browserChecks() {
         await capture(integrated ? "integrated-diff" : "native-diff");
         await click("[data-diff-back]");
         await waitFor('!document.querySelector("[data-diff-back]")');
+        // A mounted sidebar inherits its hidden parent in Settings, and its local stacking stays below the real editor.
+        const toggleBefore = await bounds("[data-sidebar-toggle] button");
+        const collapsedBefore = await evaluate('document.querySelector("aside[data-sidebar-collapsed]").dataset.sidebarCollapsed');
+        await evaluate("window.showSettings(true)");
+        await waitFor(`!!document.querySelector('[aria-label="Settings navigation"]')`);
+        assert.equal((await bounds("[data-sidebar-toggle] button")).width, 0, "a hidden sidebar cannot leave a visible toggle outside its parent");
+        const backSelector = '[aria-label="Settings navigation"] button';
+        const settingsBack = await bounds(backSelector);
+        assert.ok(settingsBack.top >= 60, "the whole Settings Back button stays below the drag strip and native controls");
+        clickAt(settingsBack.x + 80, settingsBack.y + 4);
+        await waitFor("window.settingsBackCalls === 1");
+        clickAt(settingsBack.x + 80, settingsBack.bottom - 4);
+        await waitFor("window.settingsBackCalls === 2");
+        await capture(integrated ? "integrated-settings-back" : "native-settings-back");
+        await evaluate("window.showSettings(false); window.showEditor(true)");
+        await waitFor('!!document.querySelector("[data-slot=design-editor]")');
+        let previewReady = false;
+        for (let attempt = 0; attempt < 80 && !previewReady; attempt++) {
+          for (const frame of win.webContents.mainFrame.framesInSubtree) {
+            if (frame === win.webContents.mainFrame) continue;
+            previewReady = await frame.executeJavaScript("document.fonts.ready.then(() => !!document.querySelector('[data-design-node]'))").catch(() => false);
+            if (previewReady) break;
+          }
+          if (!previewReady) await delay(25);
+        }
+        assert.ok(previewReady, "the real editor's design preview loaded before checking stacking");
+        const toggleX = toggleBefore.x + toggleBefore.width / 2;
+        const toggleY = toggleBefore.y + toggleBefore.height / 2;
+        assert.equal(
+          await evaluate(`!!document.elementFromPoint(${toggleX}, ${toggleY})?.closest('[data-slot="design-editor"]')`),
+          true,
+          "the real Designs editor covers the underlying sidebar toggle",
+        );
+        clickAt(toggleX, toggleY);
+        await delay(100);
+        assert.equal(
+          await evaluate('document.querySelector("aside[data-sidebar-collapsed]").dataset.sidebarCollapsed'),
+          collapsedBefore,
+          "a click in the editor cannot toggle the sidebar behind it",
+        );
+        await capture(integrated ? "integrated-editor-stacking" : "native-editor-stacking");
+        await evaluate("window.showEditor(false)");
         // Leading controls (including Linux decorations on the left) and fullscreen disappearance.
         await evaluate('window.simulateGeometry("leading", 80, innerWidth - 80)');
         await waitFor('document.querySelector("[data-sidebar-toggle]").getBoundingClientRect().x === 88');
@@ -158,7 +226,9 @@ async function browserChecks() {
         win.destroy();
       }
     }
-    console.log("PASS: native and integrated chrome, sidebar collapse, panels, attention, diff clearance, geometry events and fullscreen geometry");
+    console.log(
+      "PASS: native and integrated chrome, sidebar collapse, panels, attention, diff clearance, Settings Back clicks, hidden sidebar, real editor stacking, geometry events and fullscreen geometry",
+    );
   } catch (error) {
     console.error(error);
     exitCode = 1;

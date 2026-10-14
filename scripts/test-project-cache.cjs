@@ -135,7 +135,8 @@ async function browserChecks() {
     app.exit(1);
   }, 90_000).unref();
   await app.whenReady();
-  const window = new BrowserWindow({ width: 1200, height: 800, show: false, webPreferences: { backgroundThrottling: false } });
+  // App waits for the splash animation to finish; a shown window keeps its compositor painting under Xvfb.
+  const window = new BrowserWindow({ width: 1200, height: 800, show: true, webPreferences: { backgroundThrottling: false } });
   const errors = [];
   window.webContents.on("console-message", (event) => {
     if (event.level === "error") {

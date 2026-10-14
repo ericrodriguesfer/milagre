@@ -101,7 +101,8 @@ async function browserChecks() {
   const { app, BrowserWindow } = require("electron");
   app.setPath("userData", fs.mkdtempSync(path.join(os.tmpdir(), "milagre-sidebar-computers-")));
   await app.whenReady();
-  const window = new BrowserWindow({ width: 1280, height: 760, show: false, webPreferences: { backgroundThrottling: false } });
+  // App waits for the splash animation to finish; a shown window keeps its compositor painting under Xvfb.
+  const window = new BrowserWindow({ width: 1280, height: 760, show: true, webPreferences: { backgroundThrottling: false } });
   const evaluate = (source) => window.webContents.executeJavaScript(source);
   const errors = [];
   window.webContents.on("console-message", (details) => {

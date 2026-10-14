@@ -15,6 +15,17 @@ import { DiffToolbar, DiffView, useDiffPreferences, useDiffPresence } from "/src
 import { useChanges } from "/src/components/changes/useChanges";
 import { useDiffComments } from "/src/components/changes/useDiffComments";
 import "/src/styles.css";
+// This component fixture owns its decoration geometry; native windows are covered by test-window-chrome.
+const titlebar = new EventTarget();
+titlebar.visible = false;
+titlebar.getTitlebarAreaRect = () => new DOMRect(titlebar.visible ? 80 : 0, 0, innerWidth - (titlebar.visible ? 80 : 0), 60);
+Object.defineProperty(navigator, "windowControlsOverlay", { value: titlebar });
+window.setWindowDecoration = controls => {
+  window.milagreWindowChrome = { controls };
+  titlebar.visible = controls === "leading";
+  titlebar.dispatchEvent(new Event("geometrychange"));
+};
+window.setWindowDecoration("external");
 const listeners = new Set();
 const FILES = {
   "packages/app/src/components/Calendar/CalendarEmptyState.tsx": { status: "modified", added: 2, removed: 2, patch: [
@@ -123,8 +134,14 @@ async function browserChecks() {
     await evaluate(`document.querySelector('[data-diff-tree-file="README.md"]').click()`);
     await waitFor('!!document.querySelector("[data-diff-view]")');
     assert.ok(await evaluate('!!document.querySelector("[data-diff-back]")'), "The diff shows a Back button");
-    // <main> starts at the window's left edge here, as with the sidebar collapsed: Back clears the traffic lights and sidebar toggle.
-    assert.ok(await evaluate('document.querySelector("[data-diff-back]").getBoundingClientRect().left >= 128'), "Back clears the window controls");
+    // <main> starts at the window's left edge, as with the sidebar collapsed. Both decorations leave room for its toggle.
+    const backLeft = 'Math.round(document.querySelector("[data-diff-back]").getBoundingClientRect().left)';
+    assert.equal(await evaluate(backLeft), 52, "External decorations reserve only the sidebar toggle and its gap");
+    await evaluate('window.setWindowDecoration("leading")');
+    await waitFor(`${backLeft} === 128`);
+    assert.equal(await evaluate(backLeft), 128, "Back clears the integrated leading controls and sidebar toggle");
+    await evaluate('window.setWindowDecoration("external")');
+    await waitFor(`${backLeft} === 52`);
     // Electron routes a click in the drag strip to whatever paints on top; every bar button must beat the strip.
     await delay(400);
     assert.equal(

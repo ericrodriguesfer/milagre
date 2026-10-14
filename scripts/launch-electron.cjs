@@ -61,7 +61,7 @@ async function main() {
   if (process.platform === "darwin") await prepareMacBundle();
 
   const executable = process.platform === "darwin" ? appExecutable : electronBinary;
-  const child = spawn(executable, [desktopRoot], {
+  const child = spawn(executable, [desktopRoot, ...process.argv.slice(2)], {
     cwd: projectRoot,
     env: process.env,
     stdio: "inherit",

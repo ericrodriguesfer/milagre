@@ -2184,7 +2184,7 @@ function App() {
               )}
             </div>
           )}
-          <div aria-hidden className="title-drag fixed inset-x-0 top-0 z-50 h-10" />
+          <div aria-hidden className="title-drag fixed inset-x-0 top-0 z-50 h-[var(--window-chrome-height)]" />
           {changesAvailable && <ChangesToggle open={changes.open} onToggle={changes.toggle} />}
           <PanelToggles right={changesAvailable ? 12 + CORNER_PITCH : 12} />
           {showAttentionButton && !floatingInbox && attentionChats[0] && (
@@ -2205,7 +2205,7 @@ function App() {
               if (event.animationName === "app-enter-main") setAppEntered(true);
             }}
           >
-            <div className={`min-h-0 shrink-0 pt-[60px] pb-3 pl-3 ${view === "chat" || view === "canvas" ? "flex" : "hidden"}`}>
+            <div className={`min-h-0 shrink-0 pt-[var(--window-chrome-height)] pb-3 pl-3 ${view === "chat" || view === "canvas" ? "flex" : "hidden"}`}>
               <SidebarNav
                 fill
                 workspaceName={project.name}

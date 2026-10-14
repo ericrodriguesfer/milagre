@@ -3,6 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { File01Icon, ComputerTerminal01Icon, PaintBoardIcon, SmartphoneIcon } from "@hugeicons/core-free-icons";
 import Tooltip from "../primitives/Tooltip";
 import { isModalOpen } from "../../lib/modal";
+import { useWindowChrome } from "../../lib/window-chrome";
 
 /** A side panel the open Chat can show: whether it is open, and what shows or hides it. */
 export type SidePanel = { open: boolean; toggle: () => void };
@@ -88,10 +89,14 @@ export function PanelToggles({ right }: { right: number }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   const buttons = BUTTONS.filter(({ name }) => shown[name]);
+  const chrome = useWindowChrome();
   if (!buttons.length) return null;
   return (
-    // Same line as the traffic lights and the changes toggle (top 14px, 32px tall).
-    <div data-slot="panel-toggles" className="fixed top-[14px] z-[60] flex gap-2 [-webkit-app-region:no-drag]" style={{ right }}>
+    <div
+      data-slot="panel-toggles"
+      className="fixed top-[var(--window-chrome-top)] z-[60] flex gap-2 [-webkit-app-region:no-drag]"
+      style={{ right: right + chrome.rightInset }}
+    >
       {buttons.map(({ name, label, icon, shortcut }) => {
         const panel = shown[name]!;
         return (

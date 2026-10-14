@@ -7,6 +7,7 @@ import GlideMenu from "../primitives/GlideMenu";
 import { ScrollArea } from "../primitives/ScrollArea";
 import { useDismiss } from "../../lib/use-dismiss";
 import { EASE_OUT } from "../../lib/ease";
+import { useWindowChrome } from "../../lib/window-chrome";
 
 /**
  * Over the open diff: Back to the chat on the left, the diff's toolbar on the right. It comes and goes with the diff.
@@ -14,24 +15,24 @@ import { EASE_OUT } from "../../lib/ease";
  * drag region from every element with an app-region in tree order (drag adds, no-drag subtracts), so only the button
  * groups opt out: the empty stretch between them keeps dragging the window.
  */
-// The traffic lights and the sidebar toggle (12px + 76px + 32px) end here; with the sidebar collapsed, <main> starts
-// left of it, so Back moves right to stay clear.
-const WINDOW_CONTROLS_END = 128;
-
 /** Left inset that keeps the bar clear of the window controls, from where <main> (the bar's offset parent) starts. */
 function useControlsClearance(open: boolean) {
+  const { controlsEnd, rightInset } = useWindowChrome();
   const bar = useRef<HTMLDivElement>(null);
-  const [inset, setInset] = useState(0);
+  const [inset, setInset] = useState({ paddingLeft: 0, paddingRight: 0 });
   useLayoutEffect(() => {
     const host = bar.current?.offsetParent;
     if (!open || !(host instanceof HTMLElement)) return;
-    const update = () => setInset(Math.max(0, WINDOW_CONTROLS_END - host.getBoundingClientRect().left - 12));
+    const update = () => {
+      const rect = host.getBoundingClientRect();
+      setInset({ paddingLeft: Math.max(0, controlsEnd - rect.left - 12), paddingRight: Math.max(0, rect.right - window.innerWidth + rightInset) });
+    };
     update();
     // Collapsing the sidebar resizes <main>, which is what moves its left edge.
     const observer = new ResizeObserver(update);
     observer.observe(host);
     return () => observer.disconnect();
-  }, [open]);
+  }, [open, controlsEnd, rightInset]);
   return { bar, inset };
 }
 
@@ -56,8 +57,8 @@ export function DiffBar({
           ref={bar}
           key="diff-bar"
           data-diff-bar
-          style={{ paddingLeft: inset }}
-          className="absolute inset-x-3 top-[14px] z-[55] flex h-8 items-center justify-between"
+          style={inset}
+          className="absolute inset-x-3 top-[var(--window-chrome-top)] z-[55] flex h-8 items-center justify-between"
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
@@ -100,9 +101,9 @@ export function DiffBar({
 
 /** Top-right window button; sits inside the drag strip, so it opts out of dragging. */
 export function ChangesToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const chrome = useWindowChrome();
   return (
-    // Same line as the traffic lights and the sidebar toggle (top 14px, 32px tall).
-    <div className="fixed top-[14px] right-3 z-[60] [-webkit-app-region:no-drag]">
+    <div className="fixed top-[var(--window-chrome-top)] z-[60] [-webkit-app-region:no-drag]" style={{ right: 12 + chrome.rightInset }}>
       <Tooltip label={open ? "Hide changes" : "Show changes"} shortcut="⌘⇧D" compactHint side="bottom" align="end">
         <button
           type="button"
@@ -126,6 +127,7 @@ export type AttentionItem = { key: string; project: string; title?: string; aski
  * that lists each, oldest first, so you pick where to go.
  */
 export function AttentionButton({ label, items, offset, onOpen }: { label: string; items: AttentionItem[]; offset: number; onOpen: (key: string) => void }) {
+  const chrome = useWindowChrome();
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const many = items.length > 1;
@@ -143,9 +145,9 @@ export function AttentionButton({ label, items, offset, onOpen }: { label: strin
   return (
     <div
       data-attention
-      className="fixed top-[14px] z-[60] [-webkit-app-region:no-drag]"
+      className="fixed top-[var(--window-chrome-top)] z-[60] [-webkit-app-region:no-drag]"
       // Left of the buttons in the corner: `offset` is how many there are, 40px each (PanelToggles' CORNER_PITCH).
-      style={{ right: 12 + offset * 40, animation: "fade-in 160ms ease-out" }}
+      style={{ right: 12 + chrome.rightInset + offset * 40, animation: "fade-in 160ms ease-out" }}
     >
       <button
         ref={trigger}

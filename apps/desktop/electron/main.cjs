@@ -30,6 +30,7 @@ const { revealFolder } = require("./reveal.cjs");
 const { applyTranslucency, OPAQUE_BACKGROUND } = require("./window-translucency.cjs");
 const { guardNavigation } = require("./links.cjs");
 const { forwardAppShortcuts } = require("./app-shortcuts.cjs");
+const { windowChrome } = require("./window-chrome.cjs");
 const { AttentionNotifier } = require("./notifications.cjs");
 const { createDeviceNotices } = require("./device-notices.cjs");
 const { createMediaHandler } = require("./media.cjs");
@@ -407,6 +408,7 @@ async function startDesktop() {
   const { getWindowState, manageWindowState } = require("./window-state.cjs");
   function createWindow() {
     const { state, statePath } = getWindowState();
+    const chrome = windowChrome(process.platform, app.commandLine.getSwitchValue("window-decoration") === "overlay");
     const window = new BrowserWindow({
       width: state.width,
       height: state.height,
@@ -417,11 +419,12 @@ async function startDesktop() {
       title: "Milagre",
       icon: appIconPath,
       backgroundColor: OPAQUE_BACKGROUND,
-      ...(process.platform === "darwin" ? { titleBarStyle: "hidden", trafficLightPosition: { x: 24, y: 22 } } : {}),
+      ...chrome.options,
       webPreferences: {
         preload: path.join(__dirname, "preload.cjs"),
         contextIsolation: true,
         nodeIntegration: false,
+        additionalArguments: [`--milagre-window-controls=${chrome.controls}`],
       },
     });
     mainWindow = window;

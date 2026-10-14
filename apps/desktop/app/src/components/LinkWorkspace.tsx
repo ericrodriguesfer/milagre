@@ -405,9 +405,9 @@ export function LinkWorkspace({
               <p className="mt-1 text-ink-2">Your draft is kept here. Messages will be available when the host reconnects.</p>
             </div>
           )}
-          <div aria-hidden className="title-drag fixed inset-x-0 top-0 z-50 h-10" />
+          <div aria-hidden className="title-drag fixed inset-x-0 top-0 z-50 h-[var(--window-chrome-height)]" />
           <div className="flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden text-ink">
-            <div className="flex min-h-0 shrink-0 pt-[60px] pb-3 pl-3">
+            <div className="flex min-h-0 shrink-0 pt-[var(--window-chrome-height)] pb-3 pl-3">
               <SidebarNav
                 fill
                 attentionPaths={attentionPaths}

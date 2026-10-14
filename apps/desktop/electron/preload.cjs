@@ -409,4 +409,7 @@ const bridge = {
   onComputerAddPending: (callback) => listenHere("computers:pending", () => callback()),
   onComputerEvent: (callback) => listenAnyComputer(callback),
 };
+// Window decoration belongs to this window, even when its Chat uses a paired computer's bridge.
+const controls = process.argv.find((argument) => argument.startsWith("--milagre-window-controls="))?.split("=")[1];
+contextBridge.exposeInMainWorld("milagreWindowChrome", { controls: controls === "leading" || controls === "overlay" ? controls : "external" });
 contextBridge.exposeInMainWorld("milagre", bridge);

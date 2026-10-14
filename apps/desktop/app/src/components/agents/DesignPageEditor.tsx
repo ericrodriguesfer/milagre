@@ -388,7 +388,7 @@ export function DesignPageEditor({
       data-focus-scope="design-editor"
       aria-label="Edit Designs page"
       tabIndex={-1}
-      className="fixed inset-0 z-[55] overflow-hidden bg-canvas pt-10 text-ink outline-none"
+      className="fixed inset-0 z-[55] overflow-hidden bg-canvas pt-[var(--window-chrome-height)] text-ink outline-none"
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
       onKeyDownCapture={(event) => {
@@ -414,8 +414,8 @@ export function DesignPageEditor({
         if (event.code === "Space") setSpacePanning(false);
       }}
     >
-      <div aria-hidden className="title-drag absolute inset-x-0 top-0 h-10" />
-      <div className="pointer-events-none absolute left-6 right-[440px] top-[51px] min-w-0">
+      <div aria-hidden className="title-drag absolute inset-x-0 top-0 h-[var(--window-chrome-height)]" />
+      <div className="pointer-events-none absolute left-6 right-[440px] top-[calc(var(--window-chrome-height)+11px)] min-w-0">
         <h1 className="text-[14px] font-medium">
           Designs{" "}
           <span className="ml-1.5 text-[11px] font-normal text-ink-3">
@@ -430,7 +430,7 @@ export function DesignPageEditor({
         role="toolbar"
         aria-label="Design page actions"
         data-slot="design-page-actions"
-        className="absolute right-4 top-12 z-30 flex items-center gap-0.5 rounded-full border border-line bg-surface p-1.5 shadow-overlay"
+        className="absolute right-4 top-[calc(var(--window-chrome-height)+8px)] z-30 flex items-center gap-0.5 rounded-full border border-line bg-surface p-1.5 shadow-overlay"
       >
         <Tooltip label="Undo" shortcut="⌘Z" side="bottom">
           <button
@@ -485,7 +485,7 @@ export function DesignPageEditor({
           </button>
         </Tooltip>
       </div>
-      <div className="absolute inset-x-0 bottom-0 top-24">
+      <div className="absolute inset-x-0 bottom-0 top-[calc(var(--window-chrome-height)+56px)]">
         <div
           ref={viewport}
           data-slot="design-page-viewport"
